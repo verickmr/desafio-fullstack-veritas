@@ -1,98 +1,102 @@
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import api from "../api";
-import { useState } from "react";
-
-// 🎯 Schema de validação com Zod
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
+import API from "../api"
 const taskSchema = z.object({
   title: z.string().min(1, "Título é obrigatório"),
   description: z.string().optional(),
-  status: z.enum(["todo", "in_progress", "done"]).default("todo"),
-});
+  status: z.enum(["todo", "in_progress", "done"]),
+})
 
-type TaskForm = z.infer<typeof taskSchema>;
+type TaskFormValues = z.infer<typeof taskSchema>
 
-interface AddTaskModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
-  const [loading, setLoading] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<TaskForm>({
+export default function TaskForm() {
+  const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
-    defaultValues: { status: "todo" },
-  });
+    defaultValues: {
+      title: "",
+      description: "",
+      status: "todo",
+    },
+  })
 
-  const onSubmit = async (data: TaskForm) => {
-    setLoading(true);
+  const onSubmit = async (values: TaskFormValues) => {
     try {
-      await api.post("/tasks", data);
-      alert("✅ Tarefa criada com sucesso!");
-      reset();
-      onClose();
+      await API.post("/tasks", values)
+      alert("✅ Tarefa criada com sucesso!")
+      form.reset()
     } catch (err) {
-      alert("❌ Erro ao criar tarefa");
-    } finally {
-      setLoading(false);
+      alert("❌ Erro ao criar tarefa")
+      console.error(err)
     }
-  };
-
-  if (!isOpen) return null;
+  }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-2xl w-[400px] shadow-lg">
-        <h2 className="text-xl font-bold mb-4">Nova Tarefa</h2>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {/* Título */}
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Título</FormLabel>
+              <FormControl>
+                <Input placeholder="Ex: Criar Kanban" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
-          <label className="flex flex-col">
-            <span className="text-sm">Título</span>
-            <input
-              {...register("title")}
-              className="border p-2 rounded"
-              placeholder="Ex: Implementar Kanban"
-            />
-            {errors.title && (
-              <span className="text-red-500 text-sm">
-                {errors.title.message}
-              </span>
-            )}
-          </label>
+        {/* Descrição */}
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Descrição</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Detalhes da tarefa..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          <label className="flex flex-col">
-            <span className="text-sm">Descrição</span>
-            <textarea
-              {...register("description")}
-              className="border p-2 rounded resize-none"
-              rows={3}
-              placeholder="Detalhes (opcional)"
-            />
-          </label>
+        {/* Status */}
+        <FormField
+          control={form.control}
+          name="status"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Status</FormLabel>
+              <FormControl>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todo">A Fazer</SelectItem>
+                    <SelectItem value="in_progress">Em Progresso</SelectItem>
+                    <SelectItem value="done">Concluída</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-blue-600 text-white py-2 rounded mt-3 hover:bg-blue-700 transition"
-          >
-            {loading ? "Enviando..." : "Salvar"}
-          </button>
-        </form>
-
-        <button
-          onClick={onClose}
-          className="text-gray-500 text-sm mt-3 hover:underline"
-        >
-          Cancelar
-        </button>
-      </div>
-    </div>
-  );
+        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+          Salvar Tarefa
+        </Button>
+      </form>
+    </Form>
+  )
 }
