@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import API from "./api";
+import AddTaskModal from "./components/TaskForm";
 
 function App() {
   const [tasks, setTasks] = useState([]);
+  const [open, setOpen] = useState(false);
+
 
   useEffect(() => {
     API.get("/tasks")
@@ -27,6 +30,18 @@ function App() {
           ))}
         </ul>
       )}
+      <div className="p-6 font-sans">
+      <h1 className="text-2xl font-bold mb-4">Kanban Front</h1>
+
+      <button
+        onClick={() => setOpen(true)}
+        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+      >
+        + Nova Tarefa
+      </button>
+
+      <AddTaskModal isOpen={open} onClose={() => setOpen(false)} />
+    </div>
     </div>
   );
 }
