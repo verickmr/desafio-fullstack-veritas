@@ -1,17 +1,34 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import Board from './components/Board'
+import React, { useEffect, useState } from "react";
+import API from "./api";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [tasks, setTasks] = useState([]);
+
+  useEffect(() => {
+    API.get("/tasks")
+      .then((res) => {
+        console.log("✅ Dados da API:", res.data);
+        setTasks(res.data);
+      })
+      .catch((err) => {
+        console.error("❌ Erro na API:", err);
+      });
+  }, []);
 
   return (
-    <>
-      <Board/>
-    </>
-  )
+    <div>
+      <h1>Lista de Tarefas</h1>
+      {tasks.length === 0 ? (
+        <p>Carregando...</p>
+      ) : (
+        <ul>
+          {tasks.map((t) => (
+            <li key={t.id}>{t.title}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;
