@@ -1,24 +1,32 @@
+"use client"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
-import API from "../api"
+import { createTask, updateTask } from "@/api"
+import { toast } from "sonner"
+
 const taskSchema = z.object({
   title: z.string().min(1, "Título é obrigatório"),
   description: z.string().optional(),
   status: z.enum(["todo", "in_progress", "done"]),
 })
 
-type TaskFormValues = z.infer<typeof taskSchema>
+export type TaskFormValues = z.infer<typeof taskSchema>
 
-export default function TaskForm() {
+interface TaskFormProps {
+  task?: any 
+  onSuccess?: () => void
+}
+
+export default function TaskForm({ task, onSuccess }: TaskFormProps) {
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
-    defaultValues: {
+    defaultValues: task || {
       title: "",
       description: "",
       status: "todo",
@@ -27,19 +35,24 @@ export default function TaskForm() {
 
   const onSubmit = async (values: TaskFormValues) => {
     try {
-      await API.post("/tasks", values)
-      alert("✅ Tarefa criada com sucesso!")
+      if (task) {
+        await updateTask(task.id, values)
+        toast.success("Tarefa atualizada com sucesso!")
+      } else {
+        await createTask(values)
+        toast.success("Tarefa criada com sucesso!")
+      }
+      onSuccess?.()
       form.reset()
     } catch (err) {
-      alert("❌ Erro ao criar tarefa")
       console.error(err)
+      toast.error("Erro ao salvar tarefa")
     }
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* Título */}
+      <form onSubmit={form.handleSubmit(onSubmit)} id="task-form" className="space-y-4">
         <FormField
           control={form.control}
           name="title"
@@ -54,7 +67,6 @@ export default function TaskForm() {
           )}
         />
 
-        {/* Descrição */}
         <FormField
           control={form.control}
           name="description"
@@ -64,12 +76,10 @@ export default function TaskForm() {
               <FormControl>
                 <Textarea placeholder="Detalhes da tarefa..." {...field} />
               </FormControl>
-              <FormMessage />
             </FormItem>
           )}
         />
 
-        {/* Status */}
         <FormField
           control={form.control}
           name="status"
@@ -77,7 +87,7 @@ export default function TaskForm() {
             <FormItem>
               <FormLabel>Status</FormLabel>
               <FormControl>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o status" />
                   </SelectTrigger>
@@ -88,14 +98,9 @@ export default function TaskForm() {
                   </SelectContent>
                 </Select>
               </FormControl>
-              <FormMessage />
             </FormItem>
           )}
         />
-
-        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-          Salvar Tarefa
-        </Button>
       </form>
     </Form>
   )
