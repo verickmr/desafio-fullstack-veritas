@@ -31,10 +31,20 @@ func (t TaskCase) AddTask(newTask models.CreateTaskRequest) (uuid.UUID, error) {
 		Title:       newTask.Title,
 		Description: newTask.Description,
 		Status:      newTask.Status,
+		Priority:    newTask.Priority,
+		Deadline:    newTask.Deadline,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 	t.repos.Task.AddTask(repoReq)
 	return repoReq.ID, nil
 
+}
+
+func (t TaskCase) UpdateTask(id uuid.UUID, update models.UpdateTaskRequest) bool {
+	return t.repos.Task.UpdateTask(id, update)
+}
+
+func (t TaskCase) DeleteTask(id uuid.UUID) bool {
+	return t.repos.Task.DeleteTask(id)
 }
