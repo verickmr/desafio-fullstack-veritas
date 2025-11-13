@@ -9,15 +9,15 @@ import { deleteTask } from "@/api"
 import type { Task } from "@/types"
 
 const priorityColors: Record<string, string> = {
-  low: "text-green-600",
-  medium: "text-yellow-600",
-  high: "text-red-600",
+  low: "border-l-4 border-l-green-400",
+  medium: "border-l-4 border-l-yellow-400",
+  high: "border-l-4 border-l-red-500",
 }
 
 function formatDate(iso?: string) {
   if (!iso) return ""
   const d = new Date(iso)
-  return d.toLocaleDateString()
+  return d.toLocaleDateString("pt-BR")
 }
 
 interface TaskCardProps {
@@ -44,40 +44,37 @@ export default function TaskCard({
       onUpdated?.()
     } catch (err) {
       console.error(err)
-      toast.error("Erro ao deletar tarefa")
+      toast.error("Erro ao deletar tarefa.")
     }
   }
 
   return (
     <div ref={dragInnerRef as any} {...draggableProps} {...dragHandleProps}>
-      <Card className="p-3 mb-2 bg-white shadow-sm hover:shadow-md transition cursor-grab">
+      <Card
+        className={`p-3 mb-3 bg-white shadow-sm hover:shadow-md transition cursor-grab ${priorityColors[task.priority]}`}
+      >
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1">
             <h3 className="font-semibold text-gray-800">{task.title}</h3>
+
             {task.description && (
               <p className="text-sm text-gray-600 mt-1">{task.description}</p>
             )}
 
-            <div className="text-xs text-gray-400 mt-2 flex flex-col gap-1">
-              <span>
-                <strong>Status:</strong> {task.status}
-              </span>
-              <span className={priorityColors[task.priority]}>
-                <strong>Prioridade:</strong> {task.priority}
-              </span>
-              {task.deadline && (
-                <span>
-                  <strong>Prazo:</strong> {formatDate(task.deadline)}
-                </span>
-              )}
-            </div>
+            {task.deadline && (
+              <p className="text-xs text-gray-400 mt-2">
+                Prazo: {formatDate(task.deadline)}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col items-end gap-2">
-            {/* Botão de editar */}
-            <TaskDialog task={task} triggerLabel="Editar" onSuccess={onUpdated} />
+            <TaskDialog
+              task={task}
+              triggerLabel="Editar"
+              onSuccess={onUpdated}
+            />
 
-            {/* Botão de deletar */}
             <Button
               variant="destructive"
               size="sm"

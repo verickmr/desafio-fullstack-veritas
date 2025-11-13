@@ -28,6 +28,7 @@ interface TaskFormProps {
 }
 
 export default function TaskForm({ task, onSuccess }: TaskFormProps) {
+  const today = new Date().toISOString().split("T")[0]
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
     defaultValues: task
@@ -40,17 +41,18 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
           description: "",
           status: "todo",
           priority: "medium",
-          deadline: undefined,
+          deadline: today,
         },
   })
 
   const onSubmit = async (values: TaskFormValues) => {
     try {
-      const payload = {
-        ...values,
-        // Converte deadline para ISO string para o backend
-        deadline: values.deadline ? new Date(values.deadline).toISOString() : undefined,
-      }
+    const payload = {
+      ...values,
+      deadline: values.deadline
+        ? new Date(values.deadline + "T00:00:00").toISOString()
+        : undefined,
+    }
 
       if (task) {
         await updateTask(task.id, payload)
@@ -86,7 +88,6 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
           )}
         />
 
-        {/* Descrição */}
         <FormField
           control={form.control}
           name="description"
@@ -101,7 +102,6 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
           )}
         />
 
-        {/* Status */}
         <FormField
           control={form.control}
           name="status"
@@ -124,7 +124,6 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
           )}
         />
 
-        {/* Prioridade */}
         <FormField
           control={form.control}
           name="priority"
@@ -147,7 +146,6 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
           )}
         />
 
-        {/* Prazo */}
         <FormField
           control={form.control}
           name="deadline"
@@ -161,9 +159,7 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
           )}
         />
 
-        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-          Salvar Tarefa
-        </Button>
+     
       </form>
     </Form>
   )
