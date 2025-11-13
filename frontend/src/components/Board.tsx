@@ -1,89 +1,96 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { getTasks, updateTask } from "@/api"
-import Dialog from "./TaskDialog"
+import React, { useEffect, useState } from "react"
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
+import { getTasks, updateTask, deleteTask } from "@/api"
 import TaskCard from "./TaskCard"
-import {
-  DragDropContext,
-  Droppable,
-  Draggable
-} from "@hello-pangea/dnd"
+import TaskDialog from "./TaskDialog"
+import { toast } from "sonner"
+import type { Task } from "@/types"
 import type { DropResult } from "@hello-pangea/dnd"
 
+const columns: Record<string, string> = {
+  todo: "A Fazer",
+  in_progress: "Em Progresso",
+  done: "Concluídas",
+}
 
 export default function Board() {
-  const [tasks, setTasks] = useState([])
+  const [tasks, setTasks] = useState<Task[]>([])
 
+  // Pega tarefas do backend
   const fetchTasks = async () => {
-    const res = await getTasks()
-    setTasks(res.data)
+    try {
+      const { data } = await getTasks()
+      setTasks(data)
+    } catch (err) {
+      console.error(err)
+      toast.error("Erro ao carregar tarefas")
+    }
   }
 
   useEffect(() => {
     fetchTasks()
   }, [])
 
-  const columns = {
-    todo: "A Fazer",
-    in_progress: "Em Progresso",
-    done: "Concluídas",
-  }
+  // Função para mover tarefas entre colunas
+  const onDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result
+    if (!destination) return
+    if (destination.droppableId === source.droppableId) return
 
-  const handleDragEnd = async (result: DropResult) => {
-    const { source, destination } = result
+    // Atualiza localmente
+    const updatedTasks = tasks.map((t) =>
+      t.id === draggableId ? { ...t, status: destination.droppableId } : t
+    )
+    setTasks(updatedTasks)
 
-    if (!destination || destination.droppableId === source.droppableId) return
-
-    const taskId = result.draggableId
-    const newStatus = destination.droppableId
-
+    // Atualiza no backend (PATCH)
     try {
-      await updateTask(taskId, { status: newStatus })
-      fetchTasks()
+      await updateTask(draggableId, { status: destination.droppableId })
+      toast.success("Tarefa movida com sucesso!")
     } catch (err) {
-      console.error("Erro ao mover tarefa:", err)
+      console.error(err)
+      toast.error("Erro ao mover tarefa")
+      fetchTasks()
     }
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Kanban</h1>
-        <Dialog triggerLabel="+ Nova Tarefa" onSuccess={fetchTasks} />
+        <h1 className="text-2xl font-bold">Quadro de Tarefas</h1>
+        <TaskDialog triggerLabel="Nova Tarefa" onSuccess={fetchTasks} />
       </div>
 
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-3 gap-4">
-          {Object.entries(columns).map(([status, label]) => (
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {Object.entries(columns).map(([status, title]) => (
             <Droppable key={status} droppableId={status}>
               {(provided) => (
                 <div
-                  ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className="bg-gray-100 p-3 rounded-lg min-h-[400px]"
+                  ref={provided.innerRef}
+                  className="bg-gray-100 rounded-lg p-3 min-h-[400px]"
                 >
-                  <h2 className="text-lg font-semibold mb-2">{label}</h2>
+                  <h2 className="text-lg font-semibold mb-3">{title}</h2>
 
                   {tasks
-                    .filter((task) => task.status === status)
+                    .filter((t) => t.status === status)
                     .map((task, index) => (
-                      <Draggable
-                        key={task.id}
-                        draggableId={String(task.id)}
-                        index={index}
-                      >
-                        {(provided) => (
+                      <Draggable key={task.id} draggableId={task.id} index={index}>
+                        {(drag) => (
                           <TaskCard
                             task={task}
+                            dragInnerRef={drag.innerRef}
+                            draggableProps={drag.draggableProps}
+                            dragHandleProps={drag.dragHandleProps}
                             onUpdated={fetchTasks}
-                            dragInnerRef={provided.innerRef as any}
-                            draggableProps={provided.draggableProps}
-                            dragHandleProps={provided.dragHandleProps}
                           />
                         )}
                       </Draggable>
                     ))}
+
                   {provided.placeholder}
                 </div>
               )}

@@ -1,8 +1,10 @@
 package models
-import "time"
 
+import (
+	"time"
+	"github.com/google/uuid"
+)
 
-import "github.com/google/uuid"
 type Status string
 
 const (
@@ -36,7 +38,6 @@ type CreateTaskRequest struct {
 	Status      Status    `json:"status"`
 	Priority    Priority  `json:"priority"`
 	Deadline    time.Time `json:"deadline,omitempty"`	
-	CreatedAt   time.Time `json:"created_at"`
 }
 
 type UpdateTaskRequest struct {

@@ -1,4 +1,5 @@
 "use client"
+
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -9,39 +10,56 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { createTask, updateTask } from "@/api"
 import { toast } from "sonner"
+import type { Task } from "@/types"
 
 const taskSchema = z.object({
   title: z.string().min(1, "Título é obrigatório"),
   description: z.string().optional(),
   status: z.enum(["todo", "in_progress", "done"]),
+  priority: z.enum(["low", "medium", "high"]),
+  deadline: z.string().optional(),
 })
 
 export type TaskFormValues = z.infer<typeof taskSchema>
 
 interface TaskFormProps {
-  task?: any 
+  task?: Task
   onSuccess?: () => void
 }
 
 export default function TaskForm({ task, onSuccess }: TaskFormProps) {
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
-    defaultValues: task || {
-      title: "",
-      description: "",
-      status: "todo",
-    },
+    defaultValues: task
+      ? {
+          ...task,
+          deadline: task.deadline ? new Date(task.deadline).toISOString().slice(0, 10) : undefined,
+        }
+      : {
+          title: "",
+          description: "",
+          status: "todo",
+          priority: "medium",
+          deadline: undefined,
+        },
   })
 
   const onSubmit = async (values: TaskFormValues) => {
     try {
+      const payload = {
+        ...values,
+        // Converte deadline para ISO string para o backend
+        deadline: values.deadline ? new Date(values.deadline).toISOString() : undefined,
+      }
+
       if (task) {
-        await updateTask(task.id, values)
+        await updateTask(task.id, payload)
         toast.success("Tarefa atualizada com sucesso!")
       } else {
-        await createTask(values)
+        await createTask(payload)
         toast.success("Tarefa criada com sucesso!")
       }
+
       onSuccess?.()
       form.reset()
     } catch (err) {
@@ -53,6 +71,7 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} id="task-form" className="space-y-4">
+        {/* Título */}
         <FormField
           control={form.control}
           name="title"
@@ -67,6 +86,7 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
           )}
         />
 
+        {/* Descrição */}
         <FormField
           control={form.control}
           name="description"
@@ -76,10 +96,12 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
               <FormControl>
                 <Textarea placeholder="Detalhes da tarefa..." {...field} />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
 
+        {/* Status */}
         <FormField
           control={form.control}
           name="status"
@@ -101,6 +123,47 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
             </FormItem>
           )}
         />
+
+        {/* Prioridade */}
+        <FormField
+          control={form.control}
+          name="priority"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Prioridade</FormLabel>
+              <FormControl>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a prioridade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Baixa</SelectItem>
+                    <SelectItem value="medium">Média</SelectItem>
+                    <SelectItem value="high">Alta</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        {/* Prazo */}
+        <FormField
+          control={form.control}
+          name="deadline"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Prazo</FormLabel>
+              <FormControl>
+                <Input type="date" {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+          Salvar Tarefa
+        </Button>
       </form>
     </Form>
   )

@@ -10,10 +10,11 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import TaskForm from "./TaskForm"
+import type { Task } from "@/types"
 
 interface TaskDialogProps {
   triggerLabel: string
-  task?: any
+  task?: Task
   onSuccess?: () => void
 }
 

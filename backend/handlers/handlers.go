@@ -25,7 +25,7 @@ func (h *Handlers) Listen(port int) error{
 
 	handler := cors.New(cors.Options{
         AllowedOrigins: []string{"http://localhost:5173"}, 
-        AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
         AllowedHeaders: []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
     }).Handler(http.DefaultServeMux)
