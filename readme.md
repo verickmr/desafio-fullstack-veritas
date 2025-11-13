@@ -40,6 +40,8 @@ O projeto utiliza **Tailwind CSS** para UI e **shadcn/ui** para componentes como
 
 ```bash
 cd backend
+cd cmd
+cd api
 go run main.go
 ```
 
